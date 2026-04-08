@@ -137,7 +137,6 @@ class GUI:
 
     def _draw_lcd(self):
         brightness = self.device.display_brightness / 100.0
-
         for y in range(LCD_HEIGHT):
             for x in range(LCD_WIDTH):
                 shade = self.device.framebuffer[y * LCD_WIDTH + x]

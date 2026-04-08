@@ -53,6 +53,7 @@ class CFA835Device:
     pending_reports: list[Packet] = field(default_factory=list)
     manual_flush: bool = False
     gamma_correction: bool = False
+    inverted: bool = False
     _pending_image: dict | None = field(default=None, repr=False)
     _image_buf: bytearray = field(default_factory=bytearray, repr=False)
 
@@ -329,6 +330,11 @@ class CFA835Device:
                 )
                 self._draw_circle(cx, cy, r, line_shade, fill_shade)
                 return make_response(40, bytes([8]))
+        elif subcmd == 3:
+            # Emulator extension: get/set display inversion (dark mode)
+            if len(packet.data) >= 2:
+                self.inverted = bool(packet.data[1])
+            return make_response(40, bytes([3, int(self.inverted)]))
         elif subcmd == 2:
             if len(packet.data) == 6:
                 flags = packet.data[1]
