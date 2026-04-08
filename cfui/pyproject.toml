@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cfui"
+version = "0.1.0"
+description = "Python UI framework for Crystalfontz CFA835 LCD modules"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Matt" },
+]
+keywords = ["crystalfontz", "cfa835", "lcd", "ui", "embedded"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: Software Development :: User Interfaces",
+]
+
+[project.urls]
+Repository = "https://github.com/yourusername/cfui"
+
+[tool.hatch.build.targets.sdist]
+include = ["__init__.py", "_crc.py", "_font.py", "core.py", "framebuffer.py", "layout.py", "widget.py", "widgets.py"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+sources = {"." = "cfui"}
