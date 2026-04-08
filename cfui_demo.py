@@ -1,7 +1,7 @@
 """Demo of the cfui framework on the CFA835 emulator."""
 
 import sys
-from cfui import App, Page, Text, Button, HRule, ProgressBar, Spacer, Row, Column, Tabs
+from cfui import App, Page, Text, Button, HRule, ProgressBar, Slider, Spacer, Row, Column, Tabs
 
 
 def main():
@@ -18,8 +18,15 @@ def main():
 
     # ── Widgets that get updated ──
     counter_label = Text(f"Count: {counter}")
-    brightness_bar = ProgressBar(value=brightness, height=6)
     brightness_label = Text(f"{int(brightness * 100)}%", align="right")
+
+    def on_brightness_change(val):
+        brightness_label.text = f"{int(val * 100)}%"
+        app.set_brightness(int(val * 100))
+        app.invalidate()
+
+    brightness_slider = Slider(value=brightness, step=0.05, height=6,
+                               on_change=on_brightness_change)
 
     # ── Callbacks ──
     def increment():
@@ -32,22 +39,6 @@ def main():
         nonlocal counter
         counter = 0
         counter_label.text = f"Count: {counter}"
-        app.invalidate()
-
-    def brightness_up():
-        nonlocal brightness
-        brightness = min(1.0, brightness + 0.1)
-        brightness_bar.value = brightness
-        brightness_label.text = f"{int(brightness * 100)}%"
-        app.set_brightness(int(brightness * 100))
-        app.invalidate()
-
-    def brightness_down():
-        nonlocal brightness
-        brightness = max(0.0, brightness - 0.1)
-        brightness_bar.value = brightness
-        brightness_label.text = f"{int(brightness * 100)}%"
-        app.set_brightness(int(brightness * 100))
         app.invalidate()
 
     # ── Dark mode toggle ──
@@ -87,17 +78,12 @@ def main():
     settings = Page("settings", body=Column(spacing=2, children=[
         Text("Settings", align="center"),
         HRule(),
-        Text("Brightness:"),
         Row(spacing=2, children=[
-            Button("-", on_press=brightness_down),
-            brightness_bar,
+            Text("Brightness:"),
+            brightness_slider,
             brightness_label,
-            Button("+", on_press=brightness_up),
         ]),
-        Row(spacing=4, children=[
-            Button("Dark/Light", on_press=toggle_dark_mode),
-            mode_label,
-        ]),
+        Button("Dark/Light", on_press=toggle_dark_mode),
     ]))
 
     # ── LEDs page ──

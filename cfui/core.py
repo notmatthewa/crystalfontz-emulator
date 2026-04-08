@@ -259,30 +259,43 @@ class App:
             return
 
         UP, DOWN, LEFT, RIGHT, ENTER, EXIT = 1, 2, 3, 4, 5, 6
+        w = page.focused_widget
 
-        if key_code == UP:
-            page.focus_direction(0, -1)
-        elif key_code == DOWN:
-            page.focus_direction(0, 1)
-        elif key_code == LEFT:
-            w = page.focused_widget
-            if w and (hasattr(w, 'on_left') and type(w).on_left is not Widget.on_left):
+        # Active widget captures all input
+        if w and w.active:
+            if key_code == UP:
+                w.on_up()
+            elif key_code == DOWN:
+                w.on_down()
+            elif key_code == LEFT:
                 w.on_left()
-            else:
-                page.focus_direction(-1, 0)
-        elif key_code == RIGHT:
-            w = page.focused_widget
-            if w and (hasattr(w, 'on_right') and type(w).on_right is not Widget.on_right):
+            elif key_code == RIGHT:
                 w.on_right()
-            else:
-                page.focus_direction(1, 0)
-        elif key_code == ENTER:
-            w = page.focused_widget
-            if w:
+            elif key_code == ENTER:
                 w.on_enter()
-        elif key_code == EXIT:
-            if not self.go_back():
-                self.quit()
+            elif key_code == EXIT:
+                w.on_exit()
+        else:
+            if key_code == UP:
+                page.focus_direction(0, -1)
+            elif key_code == DOWN:
+                page.focus_direction(0, 1)
+            elif key_code == LEFT:
+                if w and type(w).on_left is not Widget.on_left:
+                    w.on_left()
+                else:
+                    page.focus_direction(-1, 0)
+            elif key_code == RIGHT:
+                if w and type(w).on_right is not Widget.on_right:
+                    w.on_right()
+                else:
+                    page.focus_direction(1, 0)
+            elif key_code == ENTER:
+                if w:
+                    w.on_enter()
+            elif key_code == EXIT:
+                if not self.go_back():
+                    self.quit()
 
         self._dirty = True
 

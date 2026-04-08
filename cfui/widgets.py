@@ -124,6 +124,75 @@ class ProgressBar(Widget):
                          self.fill_shade)
 
 
+class Slider(Widget):
+    """Focusable progress bar. Press Enter to activate, then Left/Right to adjust."""
+
+    def __init__(self, value: float = 0.0, step: float = 0.05, height: int = 6,
+                 on_change: Callable | None = None,
+                 border_shade: int = 0xFF, fill_shade: int = 0xFF):
+        super().__init__()
+        self._value = max(0.0, min(1.0, value))
+        self.step = step
+        self.bar_height = height
+        self.on_change = on_change
+        self.border_shade = border_shade
+        self.fill_shade = fill_shade
+        self.focusable = True
+        self.flex = True
+
+    @property
+    def value(self) -> float:
+        return self._value
+
+    @value.setter
+    def value(self, v: float):
+        self._value = max(0.0, min(1.0, v))
+
+    def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
+        return (max_w, self.bar_height)
+
+    def draw(self, fb: FrameBuffer):
+        if not self.visible:
+            return
+        shade = self.border_shade
+        # Draw border — thicker when active to show edit mode
+        fb.rect(self.x, self.y, self.width, self.bar_height, shade)
+        # Fill
+        inner_w = self.width - 2
+        filled = int(inner_w * self._value)
+        if filled > 0:
+            fb.fill_rect(self.x + 1, self.y + 1, filled, self.bar_height - 2,
+                         self.fill_shade)
+        # Draw handle marker when active
+        if self.active:
+            hx = self.x + 1 + filled
+            fb.vline(hx, self.y, self.bar_height, 0xFF)
+            if hx + 1 < self.x + self.width:
+                fb.vline(hx + 1, self.y, self.bar_height, 0xFF)
+        # Focused highlight (invert border area)
+        if self.focused and not self.active:
+            fb.invert_rect(self.x - 1, self.y - 1,
+                           self.width + 2, self.bar_height + 2)
+
+    def on_enter(self):
+        self.active = not self.active
+
+    def on_exit(self):
+        self.active = False
+
+    def _adjust(self, delta: float):
+        old = self._value
+        self._value = max(0.0, min(1.0, self._value + delta))
+        if self._value != old and self.on_change:
+            self.on_change(self._value)
+
+    def on_left(self):
+        self._adjust(-self.step)
+
+    def on_right(self):
+        self._adjust(self.step)
+
+
 class Spacer(Widget):
     """Empty space with fixed dimensions."""
 

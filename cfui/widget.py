@@ -12,6 +12,7 @@ class Widget:
         self.height = 0
         self.focusable = False
         self.focused = False
+        self.active = False  # When True, widget captures all directional input
         self.parent: Widget | None = None
         self.visible = True
         self.flex = False  # If True, expands to fill remaining space in Row
@@ -48,3 +49,15 @@ class Widget:
     def on_right(self):
         """Called when Right is pressed on this focused widget."""
         pass
+
+    def on_up(self):
+        """Called when Up is pressed on this active widget."""
+        pass
+
+    def on_down(self):
+        """Called when Down is pressed on this active widget."""
+        pass
+
+    def on_exit(self):
+        """Called when Exit is pressed on this active widget."""
+        self.active = False
