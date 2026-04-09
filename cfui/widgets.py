@@ -100,9 +100,12 @@ class Button(Widget):
         else:
             bx = self.x + (self.width - btn_w) // 2 if btn_w < self.width else self.x
         by = self.y
-        border = 0x80 if self.focused else 0xFF
-        fb.rounded_rect(bx, by, btn_w, btn_h, border)
-        fb.draw_text(bx + 3, by + 2, self.label, 0xFF)
+        if self.focused:
+            fb.rounded_rect(bx, by, btn_w, btn_h, 0xFF, fill=0xFF)
+            fb.draw_text(bx + 3, by + 2, self.label, 0x00)
+        else:
+            fb.rounded_rect(bx, by, btn_w, btn_h, 0xFF)
+            fb.draw_text(bx + 3, by + 2, self.label, 0xFF)
 
     def on_enter(self):
         if self.on_press:
@@ -214,7 +217,7 @@ class Slider(Widget):
                            self.border_shade)
         elif self.focused:
             fb.rect(bar_x, self.y, bar_w, self.bar_height,
-                    self.border_shade // 2)
+                    self.border_shade, fill=0x40)
         else:
             fb.rect(bar_x, self.y, bar_w, self.bar_height,
                     self.border_shade)
