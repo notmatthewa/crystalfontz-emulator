@@ -223,6 +223,16 @@ class Tabs(Widget):
             else:
                 fb.draw_text(tx, self.y + 1, label, 0xFF)
             tx += tw + 2
+
+        if self.focused:
+            arrow_y = self.y + 1
+            if self.active_index > 0:
+                fb.draw_char(self.x + self.width - CHAR_W * 2 - 1,
+                             arrow_y, ord("<"), 0x80)
+            if self.active_index < len(self._tabs) - 1:
+                fb.draw_char(self.x + self.width - CHAR_W,
+                             arrow_y, ord(">"), 0x80)
+
         fb.hline(self.x, self.y + self.tab_bar_height, self.width, 0x80)
         content = self.active_content
         if content:
