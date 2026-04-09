@@ -133,11 +133,9 @@ class ProgressBar(Widget):
 class Slider(Widget):
     """Focusable progress bar with optional inline label.
 
-    Press Enter to activate, then Left/Right to adjust.
-    When focused, the border blinks to indicate selection.
+    Press Enter to activate, then Left/Right to adjust. Press Exit to deactivate.
+    Focused/hovered: dim border. Active/editing: dashed border.
     """
-
-    BLINK_PERIOD = 0.5  # seconds per blink phase
 
     def __init__(self, value: float = 0.0, step: float = 0.05, height: int = 6,
                  label: str = "", on_change: Callable | None = None,
@@ -161,10 +159,6 @@ class Slider(Widget):
     def value(self, v: float):
         self._value = max(0.0, min(1.0, v))
 
-    @property
-    def needs_blink(self) -> bool:
-        return self.focused and not self.active
-
     def _label_width(self) -> int:
         if not self.label:
             return 0
@@ -187,30 +181,25 @@ class Slider(Widget):
             label_y = self.y + (self.bar_height - CHAR_H) // 2
             fb.draw_text(self.x, max(label_y, self.y), self.label, 0xFF)
 
-        # Border shade: blink when focused, solid when active or idle
-        if self.focused and not self.active:
-            import time
-            phase = int(time.monotonic() / self.BLINK_PERIOD) % 2
-            border = self.border_shade if phase == 0 else self.border_shade // 2
-        elif self.active:
-            border = self.border_shade
+        # Draw bar border based on state
+        if self.active:
+            # Editing: dashed border
+            fb.dashed_rect(bar_x, self.y, bar_w, self.bar_height,
+                           self.border_shade)
+        elif self.focused:
+            # Hovered: dim border
+            fb.rect(bar_x, self.y, bar_w, self.bar_height,
+                    self.border_shade // 2)
         else:
-            border = self.border_shade // 2
+            # Idle: no border (just fill)
+            pass
 
-        # Draw bar
-        fb.rect(bar_x, self.y, bar_w, self.bar_height, border)
+        # Fill
         inner_w = bar_w - 2
         filled = int(inner_w * self._value)
         if filled > 0:
             fb.fill_rect(bar_x + 1, self.y + 1, filled, self.bar_height - 2,
                          self.fill_shade)
-
-        # Draw handle marker when active
-        if self.active:
-            hx = bar_x + 1 + filled
-            fb.vline(hx, self.y, self.bar_height, 0xFF)
-            if hx + 1 < bar_x + bar_w:
-                fb.vline(hx + 1, self.y, self.bar_height, 0xFF)
 
     def on_enter(self):
         self.active = not self.active

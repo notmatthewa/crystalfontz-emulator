@@ -45,6 +45,19 @@ class FrameBuffer:
         self.vline(x, y, h, shade)
         self.vline(x + w - 1, y, h, shade)
 
+    def dashed_rect(self, x: int, y: int, w: int, h: int, shade: int,
+                    dash: int = 2, gap: int = 2):
+        """Draw a rectangle with dashed lines."""
+        period = dash + gap
+        for i in range(w):
+            if i % period < dash:
+                self.set_pixel(x + i, y, shade)
+                self.set_pixel(x + i, y + h - 1, shade)
+        for i in range(h):
+            if i % period < dash:
+                self.set_pixel(x, y + i, shade)
+                self.set_pixel(x + w - 1, y + i, shade)
+
     def fill_rect(self, x: int, y: int, w: int, h: int, shade: int):
         for fy in range(y, y + h):
             for fx in range(x, x + w):
