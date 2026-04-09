@@ -42,12 +42,13 @@ class Button(Widget):
     """Focusable button with label and callback."""
 
     def __init__(self, label: str, on_press: Callable | None = None,
-                 style: str = "bracket"):
+                 style: str = "bracket", align: str = "center"):
         super().__init__()
         self.label = label
         self.on_press = on_press
         self.focusable = True
         self.style = style  # "bracket" shows [Label], "plain" just highlights
+        self.align = align  # "left", "center", "right"
 
     def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
         if self.style == "bracket":
@@ -64,7 +65,12 @@ class Button(Widget):
         else:
             display = self.label
         tw = len(display) * CHAR_W
-        x = self.x + (self.width - tw) // 2 if tw < self.width else self.x
+        if self.align == "left":
+            x = self.x
+        elif self.align == "right":
+            x = self.x + self.width - tw
+        else:
+            x = self.x + (self.width - tw) // 2 if tw < self.width else self.x
         fb.draw_text(x, self.y, display, 0xFF)
         if self.focused:
             fb.invert_rect(x - 1, self.y - 1, tw + 2, CHAR_H + 2)
@@ -125,15 +131,22 @@ class ProgressBar(Widget):
 
 
 class Slider(Widget):
-    """Focusable progress bar. Press Enter to activate, then Left/Right to adjust."""
+    """Focusable progress bar with optional inline label.
+
+    Press Enter to activate, then Left/Right to adjust.
+    When focused, the border blinks to indicate selection.
+    """
+
+    BLINK_PERIOD = 0.5  # seconds per blink phase
 
     def __init__(self, value: float = 0.0, step: float = 0.05, height: int = 6,
-                 on_change: Callable | None = None,
+                 label: str = "", on_change: Callable | None = None,
                  border_shade: int = 0xFF, fill_shade: int = 0xFF):
         super().__init__()
         self._value = max(0.0, min(1.0, value))
         self.step = step
         self.bar_height = height
+        self.label = label
         self.on_change = on_change
         self.border_shade = border_shade
         self.fill_shade = fill_shade
@@ -148,31 +161,56 @@ class Slider(Widget):
     def value(self, v: float):
         self._value = max(0.0, min(1.0, v))
 
+    @property
+    def needs_blink(self) -> bool:
+        return self.focused and not self.active
+
+    def _label_width(self) -> int:
+        if not self.label:
+            return 0
+        return len(self.label) * CHAR_W + CHAR_W  # label text + gap
+
     def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
-        return (max_w, self.bar_height)
+        h = max(self.bar_height, CHAR_H) if self.label else self.bar_height
+        return (max_w, h)
 
     def draw(self, fb: FrameBuffer):
         if not self.visible:
             return
-        shade = self.border_shade
-        # Draw border — thicker when active to show edit mode
-        fb.rect(self.x, self.y, self.width, self.bar_height, shade)
-        # Fill
-        inner_w = self.width - 2
+
+        label_w = self._label_width()
+        bar_x = self.x + label_w
+        bar_w = self.width - label_w
+
+        # Draw inline label
+        if self.label:
+            label_y = self.y + (self.bar_height - CHAR_H) // 2
+            fb.draw_text(self.x, max(label_y, self.y), self.label, 0xFF)
+
+        # Border shade: blink when focused, solid when active or idle
+        if self.focused and not self.active:
+            import time
+            phase = int(time.monotonic() / self.BLINK_PERIOD) % 2
+            border = self.border_shade if phase == 0 else self.border_shade // 2
+        elif self.active:
+            border = self.border_shade
+        else:
+            border = self.border_shade // 2
+
+        # Draw bar
+        fb.rect(bar_x, self.y, bar_w, self.bar_height, border)
+        inner_w = bar_w - 2
         filled = int(inner_w * self._value)
         if filled > 0:
-            fb.fill_rect(self.x + 1, self.y + 1, filled, self.bar_height - 2,
+            fb.fill_rect(bar_x + 1, self.y + 1, filled, self.bar_height - 2,
                          self.fill_shade)
+
         # Draw handle marker when active
         if self.active:
-            hx = self.x + 1 + filled
+            hx = bar_x + 1 + filled
             fb.vline(hx, self.y, self.bar_height, 0xFF)
-            if hx + 1 < self.x + self.width:
+            if hx + 1 < bar_x + bar_w:
                 fb.vline(hx + 1, self.y, self.bar_height, 0xFF)
-        # Focused highlight (invert border area)
-        if self.focused and not self.active:
-            fb.invert_rect(self.x - 1, self.y - 1,
-                           self.width + 2, self.bar_height + 2)
 
     def on_enter(self):
         self.active = not self.active

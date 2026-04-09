@@ -181,8 +181,18 @@ class App:
         self._drain()
 
         try:
+            last_blink = 0
             while self._running:
                 self._poll_keys()
+                # Force redraw during blink animations
+                page = self.current_page
+                if page:
+                    w = page.focused_widget
+                    if w and hasattr(w, 'needs_blink') and w.needs_blink:
+                        now = int(time.monotonic() * 2)  # 2 phases per second
+                        if now != last_blink:
+                            last_blink = now
+                            self._dirty = True
                 if self._dirty:
                     self._render()
                     self._dirty = False
