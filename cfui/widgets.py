@@ -12,7 +12,7 @@ class Text(Widget):
         super().__init__()
         self._text = text
         self.shade = shade
-        self.align = align  # "left", "center", "right"
+        self.align = align
 
     @property
     def text(self) -> str:
@@ -39,7 +39,13 @@ class Text(Widget):
 
 
 class Button(Widget):
-    """Focusable button with label and callback."""
+    """Focusable button with label and callback.
+
+    Styles:
+        "bracket" - renders as [Label], inverts on focus
+        "plain" - renders as Label, inverts on focus
+        "bordered" - rounded rectangle border, bright on focus
+    """
 
     def __init__(self, label: str, on_press: Callable | None = None,
                  style: str = "bracket", align: str = "center"):
@@ -47,19 +53,27 @@ class Button(Widget):
         self.label = label
         self.on_press = on_press
         self.focusable = True
-        self.style = style  # "bracket" shows [Label], "plain" just highlights
-        self.align = align  # "left", "center", "right"
+        self.style = style
+        self.align = align
 
     def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
         if self.style == "bracket":
-            w = (len(self.label) + 2) * CHAR_W  # [Label]
+            w = (len(self.label) + 2) * CHAR_W
+        elif self.style == "bordered":
+            w = len(self.label) * CHAR_W + 6
         else:
             w = len(self.label) * CHAR_W
-        return (min(w, max_w), CHAR_H)
+        h = CHAR_H + 4 if self.style == "bordered" else CHAR_H
+        return (min(w, max_w), h)
 
     def draw(self, fb: FrameBuffer):
         if not self.visible:
             return
+
+        if self.style == "bordered":
+            self._draw_bordered(fb)
+            return
+
         if self.style == "bracket":
             display = f"[{self.label}]"
         else:
@@ -74,6 +88,21 @@ class Button(Widget):
         fb.draw_text(x, self.y, display, 0xFF)
         if self.focused:
             fb.invert_rect(x - 1, self.y - 1, tw + 2, CHAR_H + 2)
+
+    def _draw_bordered(self, fb: FrameBuffer):
+        tw = len(self.label) * CHAR_W
+        btn_w = tw + 6
+        btn_h = CHAR_H + 4
+        if self.align == "left":
+            bx = self.x
+        elif self.align == "right":
+            bx = self.x + self.width - btn_w
+        else:
+            bx = self.x + (self.width - btn_w) // 2 if btn_w < self.width else self.x
+        by = self.y
+        border = 0xFF if self.focused else 0x80
+        fb.rounded_rect(bx, by, btn_w, btn_h, border)
+        fb.draw_text(bx + 3, by + 2, self.label, 0xFF)
 
     def on_enter(self):
         if self.on_press:
@@ -162,7 +191,7 @@ class Slider(Widget):
     def _label_width(self) -> int:
         if not self.label:
             return 0
-        return len(self.label) * CHAR_W + CHAR_W  # label text + gap
+        return len(self.label) * CHAR_W + CHAR_W
 
     def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
         h = max(self.bar_height, CHAR_H) if self.label else self.bar_height
@@ -176,25 +205,17 @@ class Slider(Widget):
         bar_x = self.x + label_w
         bar_w = self.width - label_w
 
-        # Draw inline label
         if self.label:
             label_y = self.y + (self.bar_height - CHAR_H) // 2
             fb.draw_text(self.x, max(label_y, self.y), self.label, 0xFF)
 
-        # Draw bar border based on state
         if self.active:
-            # Editing: dashed border
             fb.dashed_rect(bar_x, self.y, bar_w, self.bar_height,
                            self.border_shade)
         elif self.focused:
-            # Hovered: dim border
             fb.rect(bar_x, self.y, bar_w, self.bar_height,
                     self.border_shade // 2)
-        else:
-            # Idle: no border (just fill)
-            pass
 
-        # Fill
         inner_w = bar_w - 2
         filled = int(inner_w * self._value)
         if filled > 0:
@@ -214,10 +235,12 @@ class Slider(Widget):
             self.on_change(self._value)
 
     def on_left(self):
-        self._adjust(-self.step)
+        if self.active:
+            self._adjust(-self.step)
 
     def on_right(self):
-        self._adjust(self.step)
+        if self.active:
+            self._adjust(self.step)
 
 
 class Spacer(Widget):
@@ -233,11 +256,14 @@ class Spacer(Widget):
 
 
 class Icon(Widget):
-    """Small bitmap icon from raw pixel data."""
+    """Small bitmap icon from a 2D pixel array.
+
+    bitmap is a list of rows, each row a list of 0/1 values.
+    """
 
     def __init__(self, bitmap: list[list[int]], shade: int = 0xFF):
         super().__init__()
-        self.bitmap = bitmap  # 2D list: bitmap[row][col] = 0 or 1
+        self.bitmap = bitmap
         self.shade = shade
 
     def measure(self, max_w: int, max_h: int) -> tuple[int, int]:

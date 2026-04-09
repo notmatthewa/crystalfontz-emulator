@@ -5,10 +5,17 @@ import time
 from typing import Callable
 
 from ._crc import get_crc
-
 from .framebuffer import FrameBuffer, LCD_WIDTH, LCD_HEIGHT
 from .widget import Widget
 from .layout import Column
+
+# CFA835 key codes (press events)
+KEY_UP = 1
+KEY_DOWN = 2
+KEY_LEFT = 3
+KEY_RIGHT = 4
+KEY_ENTER = 5
+KEY_EXIT = 6
 
 
 class Page:
@@ -167,8 +174,11 @@ class App:
         return None
 
     def set_led(self, led: int, green: int = 0, red: int = 0):
-        """Set LED color. led: 0-3, green/red: 0-100 brightness."""
-        # LED GPIO mapping: led 0 = gpio 11(green)/12(red), led 1 = 9/10, etc.
+        """Set LED color. led: 0-3, green/red: 0-100 brightness.
+
+        LEDs are controlled via GPIO pins. Each LED has a green and red
+        channel mapped to consecutive GPIO indices (11/12, 9/10, 7/8, 5/6).
+        """
         green_gpio = 11 - led * 2
         red_gpio = 12 - led * 2
         self._send_packet(34, bytes([green_gpio, max(0, min(100, green))]))
@@ -188,22 +198,12 @@ class App:
         self._drain()
 
         try:
-            last_blink = 0
             while self._running:
                 self._poll_keys()
-                # Force redraw during blink animations
-                page = self.current_page
-                if page:
-                    w = page.focused_widget
-                    if w and hasattr(w, 'needs_blink') and w.needs_blink:
-                        now = int(time.monotonic() * 2)  # 2 phases per second
-                        if now != last_blink:
-                            last_blink = now
-                            self._dirty = True
                 if self._dirty:
                     self._render()
                     self._dirty = False
-                time.sleep(0.02)  # ~50fps
+                time.sleep(0.02)
         except KeyboardInterrupt:
             pass
         finally:
@@ -213,8 +213,6 @@ class App:
 
     def quit(self):
         self._running = False
-
-    # ── Internal ──────────────────────────────────────────
 
     def _render(self):
         page = self.current_page
@@ -259,11 +257,9 @@ class App:
             i += 2 + dlen + 2
 
     def _handle_key(self, key_code: int):
-        # Only handle press events (1-6), not releases (7-12)
-        if key_code > 6:
-            return
+        if key_code > KEY_EXIT:
+            return  # Ignore release events (7-12)
 
-        # Custom handler first
         if key_code in self._on_key:
             self._on_key[key_code]()
             self._dirty = True
@@ -273,42 +269,37 @@ class App:
         if not page:
             return
 
-        UP, DOWN, LEFT, RIGHT, ENTER, EXIT = 1, 2, 3, 4, 5, 6
         w = page.focused_widget
 
-        # Active widget captures all input
         if w and w.active:
-            if key_code == UP:
-                w.on_up()
-            elif key_code == DOWN:
-                w.on_down()
-            elif key_code == LEFT:
-                w.on_left()
-            elif key_code == RIGHT:
-                w.on_right()
-            elif key_code == ENTER:
-                w.on_enter()
-            elif key_code == EXIT:
-                w.on_exit()
+            # Active widget captures all input
+            {
+                KEY_UP: w.on_up,
+                KEY_DOWN: w.on_down,
+                KEY_LEFT: w.on_left,
+                KEY_RIGHT: w.on_right,
+                KEY_ENTER: w.on_enter,
+                KEY_EXIT: w.on_exit,
+            }.get(key_code, lambda: None)()
         else:
-            if key_code == UP:
+            if key_code == KEY_UP:
                 page.focus_direction(0, -1)
-            elif key_code == DOWN:
+            elif key_code == KEY_DOWN:
                 page.focus_direction(0, 1)
-            elif key_code == LEFT:
-                if w and type(w).on_left is not Widget.on_left:
+            elif key_code == KEY_LEFT:
+                if w and w.handles_left_right():
                     w.on_left()
                 else:
                     page.focus_direction(-1, 0)
-            elif key_code == RIGHT:
-                if w and type(w).on_right is not Widget.on_right:
+            elif key_code == KEY_RIGHT:
+                if w and w.handles_left_right():
                     w.on_right()
                 else:
                     page.focus_direction(1, 0)
-            elif key_code == ENTER:
+            elif key_code == KEY_ENTER:
                 if w:
                     w.on_enter()
-            elif key_code == EXIT:
+            elif key_code == KEY_EXIT:
                 if not self.go_back():
                     self.quit()
 

@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Callable
 
 from .widget import Widget
 from .framebuffer import FrameBuffer, CHAR_W, CHAR_H
@@ -67,7 +66,11 @@ class Column(Widget):
 
 
 class Row(Widget):
-    """Horizontal layout of widgets."""
+    """Horizontal layout of widgets.
+
+    Fixed-size children are measured first; remaining space is divided
+    equally among children with flex=True (e.g. ProgressBar, Slider).
+    """
 
     def __init__(self, children: list[Widget] | None = None, spacing: int = 2,
                  padding: int = 0, align: str = "left"):
@@ -75,7 +78,7 @@ class Row(Widget):
         self.children = children or []
         self.spacing = spacing
         self.padding = padding
-        self.align = align  # "left", "center", "right", "spread"
+        self.align = align
         for child in self.children:
             child.parent = self
 
@@ -109,7 +112,6 @@ class Row(Widget):
         if not visible_children:
             return
 
-        # First pass: measure fixed (non-flex) children
         fixed_total = 0
         flex_count = 0
         sizes = {}
@@ -124,7 +126,6 @@ class Row(Widget):
         gap_total = self.spacing * max(0, len(visible_children) - 1)
         remaining = inner_w - fixed_total - gap_total
 
-        # Second pass: measure flex children with remaining space
         if flex_count > 0:
             flex_w = max(0, remaining // flex_count)
             for child in visible_children:
@@ -132,7 +133,6 @@ class Row(Widget):
                     cw, ch = child.measure(flex_w, inner_h)
                     sizes[id(child)] = (min(cw, flex_w), ch)
 
-        # Compute total for alignment
         all_sizes = [sizes[id(c)] for c in visible_children]
         total_w = sum(s[0] for s in all_sizes) + gap_total
 
@@ -213,7 +213,6 @@ class Tabs(Widget):
     def draw(self, fb: FrameBuffer):
         if not self.visible:
             return
-        # Draw tab headers
         tx = self.x
         for i, (name, _) in enumerate(self._tabs):
             label = f" {name} "
@@ -224,9 +223,7 @@ class Tabs(Widget):
             else:
                 fb.draw_text(tx, self.y + 1, label, 0xFF)
             tx += tw + 2
-        # Separator line
         fb.hline(self.x, self.y + self.tab_bar_height, self.width, 0x80)
-        # Draw active content
         content = self.active_content
         if content:
             content.draw(fb)
@@ -234,6 +231,9 @@ class Tabs(Widget):
     def focus_center(self) -> tuple[int, int]:
         """Report center as the tab bar header, not the full widget."""
         return (self.x + self.width // 2, self.y + self.tab_bar_height // 2)
+
+    def handles_left_right(self) -> bool:
+        return True
 
     def on_left(self):
         if self.active_index > 0:

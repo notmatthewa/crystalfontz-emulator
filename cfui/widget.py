@@ -12,10 +12,10 @@ class Widget:
         self.height = 0
         self.focusable = False
         self.focused = False
-        self.active = False  # When True, widget captures all directional input
+        self.active = False
         self.parent: Widget | None = None
         self.visible = True
-        self.flex = False  # If True, expands to fill remaining space in Row
+        self.flex = False
 
     def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
         """Return (width, height) this widget wants. Override in subclasses."""
@@ -45,6 +45,10 @@ class Widget:
     def on_enter(self):
         """Called when Enter is pressed on this focused widget."""
         pass
+
+    def handles_left_right(self) -> bool:
+        """Return True if this widget wants Left/Right input (when not active)."""
+        return False
 
     def on_left(self):
         """Called when Left is pressed on this focused widget."""

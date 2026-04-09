@@ -58,6 +58,20 @@ class FrameBuffer:
                 self.set_pixel(x, y + i, shade)
                 self.set_pixel(x + w - 1, y + i, shade)
 
+    def rounded_rect(self, x: int, y: int, w: int, h: int, shade: int,
+                     fill: int = 0):
+        """Draw a rectangle with 1px rounded corners."""
+        if fill:
+            for fy in range(y, y + h):
+                for fx in range(x, x + w):
+                    if (fx == x or fx == x + w - 1) and (fy == y or fy == y + h - 1):
+                        continue
+                    self.set_pixel(fx, fy, fill)
+        self.hline(x + 1, y, w - 2, shade)
+        self.hline(x + 1, y + h - 1, w - 2, shade)
+        self.vline(x, y + 1, h - 2, shade)
+        self.vline(x + w - 1, y + 1, h - 2, shade)
+
     def fill_rect(self, x: int, y: int, w: int, h: int, shade: int):
         for fy in range(y, y + h):
             for fx in range(x, x + w):
