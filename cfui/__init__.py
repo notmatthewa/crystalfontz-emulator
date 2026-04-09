@@ -8,9 +8,11 @@ Communicates over serial using the CFA835 packet protocol.
 from .core import App, Page
 from .widgets import Text, Button, HRule, ProgressBar, Slider, Spacer, Icon
 from .layout import Row, Column, Tabs
+from .storage import Storage
 
 __all__ = [
     "App", "Page",
     "Text", "Button", "HRule", "ProgressBar", "Slider", "Spacer", "Icon",
     "Row", "Column", "Tabs",
+    "Storage",
 ]
