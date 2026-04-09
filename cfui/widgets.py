@@ -210,14 +210,19 @@ class Slider(Widget):
 
         if self.label:
             label_y = self.y + (self.bar_height - CHAR_H) // 2
-            fb.draw_text(self.x, max(label_y, self.y), self.label, 0xFF)
+            ly = max(label_y, self.y)
+            if self.focused and not self.active:
+                fb.fill_rect(self.x, ly, label_w - CHAR_W, CHAR_H, 0xFF)
+                fb.draw_text(self.x, ly, self.label, 0x00)
+            else:
+                fb.draw_text(self.x, ly, self.label, 0xFF)
 
         if self.active:
             fb.dashed_rect(bar_x, self.y, bar_w, self.bar_height,
                            self.border_shade)
         elif self.focused:
             fb.rect(bar_x, self.y, bar_w, self.bar_height,
-                    self.border_shade, fill=0x40)
+                    self.border_shade)
         else:
             fb.rect(bar_x, self.y, bar_w, self.bar_height,
                     self.border_shade)
