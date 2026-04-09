@@ -159,6 +159,13 @@ class App:
             self._send_packet(14, bytes([display, keypad]))
         self._drain()
 
+    def get_brightness(self) -> tuple[int, int] | None:
+        """Query display and keypad brightness. Returns (display, keypad) or None."""
+        resp = self._send_and_read(14)
+        if resp and len(resp) >= 2:
+            return (resp[0], resp[1])
+        return None
+
     def set_led(self, led: int, green: int = 0, red: int = 0):
         """Set LED color. led: 0-3, green/red: 0-100 brightness."""
         # LED GPIO mapping: led 0 = gpio 11(green)/12(red), led 1 = 9/10, etc.
@@ -311,6 +318,31 @@ class App:
         payload = bytes([command, len(data)]) + data
         crc = get_crc(payload)
         os.write(self.fd, payload + crc.to_bytes(2, "little"))
+
+    def _send_and_read(self, command: int, data: bytes = b"",
+                       timeout: float = 0.2) -> bytes | None:
+        """Send a command and return the response data, or None on timeout."""
+        self._send_packet(command, data)
+        buf = bytearray()
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                chunk = os.read(self.fd, 4096)
+                buf.extend(chunk)
+            except (OSError, BlockingIOError):
+                pass
+            # Try to parse a response packet
+            if len(buf) >= 4:
+                ptype = buf[0] & 0xC0
+                cmd = buf[0] & 0x3F
+                dlen = buf[1]
+                if len(buf) >= 2 + dlen + 2:
+                    if ptype == 0x40 and cmd == command:
+                        return bytes(buf[2:2 + dlen])
+                    # Skip non-matching packets (e.g. key reports)
+                    buf = buf[2 + dlen + 2:]
+            time.sleep(0.005)
+        return None
 
     def _drain(self):
         deadline = time.monotonic() + 0.1
