@@ -101,16 +101,18 @@ class Page:
 class App:
     """Main application. Manages pages, input, and rendering to the CFA835."""
 
-    def __init__(self, pty_path: str):
+    def __init__(self, pty_path: str, exit_quits: bool = False):
         self.fd = os.open(pty_path, os.O_RDWR | os.O_NOCTTY)
         os.set_blocking(self.fd, False)
         self.fb = FrameBuffer()
+        self._last_frame: bytes = b""
         self._pages: dict[str, Page] = {}
         self._page_stack: list[str] = []
         self._running = False
         self._dirty = True
         self._on_key: dict[int, Callable] = {}
         self.dark_mode = False
+        self.exit_quits = exit_quits
         self._overlay: object | None = None
 
     def add_page(self, page: Page):
@@ -214,6 +216,7 @@ class App:
                 if self._dirty:
                     self._render()
                     self._dirty = False
+                    self._poll_keys()
                 time.sleep(0.02)
         except KeyboardInterrupt:
             pass
@@ -241,14 +244,17 @@ class App:
         self._flush_framebuffer()
 
     def _flush_framebuffer(self):
-        """Send entire framebuffer as a streamed image."""
-        self._send_packet(40, bytes([2, 0, 0, 0, LCD_WIDTH, LCD_HEIGHT]))
-        time.sleep(0.01)
+        """Send framebuffer to device. Skips if identical to last frame."""
         if self.dark_mode:
-            self._write_raw(bytes(self.fb.buf))
+            frame = bytes(self.fb.buf)
         else:
-            inverted = bytes(255 - b for b in self.fb.buf)
-            self._write_raw(inverted)
+            frame = bytes(255 - b for b in self.fb.buf)
+        if frame == self._last_frame:
+            return
+        self._last_frame = frame
+        self._send_packet(40, bytes([2, 0, 0, 0, LCD_WIDTH, LCD_HEIGHT]))
+        time.sleep(0.005)
+        self._write_raw(frame)
         self._drain()
 
     def _poll_keys(self):
@@ -302,7 +308,7 @@ class App:
             if w:
                 w.on_enter()
         elif key_code == KEY_EXIT:
-            if not self.go_back():
+            if not self.go_back() and self.exit_quits:
                 self.quit()
         else:
             direction_map = {
@@ -367,5 +373,4 @@ class App:
                 n = os.write(self.fd, data[offset:offset + 4096])
                 offset += n
             except BlockingIOError:
-                time.sleep(0.005)
-            time.sleep(0.005)
+                time.sleep(0.001)
