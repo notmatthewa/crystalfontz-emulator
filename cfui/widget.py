@@ -3,7 +3,14 @@ from .framebuffer import FrameBuffer
 
 
 class Widget:
-    """Base class for all UI widgets."""
+    """Base class for all UI widgets.
+
+    Direction actions control what happens when a D-pad button is pressed
+    while this widget is focused (but not active):
+        "move"   - move focus to the nearest widget in that direction (default)
+        "select" - call this widget's on_up/on_down/on_left/on_right handler
+        None     - do nothing (block movement in that direction)
+    """
 
     def __init__(self):
         self.x = 0
@@ -16,6 +23,10 @@ class Widget:
         self.parent: Widget | None = None
         self.visible = True
         self.flex = False
+        self.action_up: str | None = "move"
+        self.action_down: str | None = "move"
+        self.action_left: str | None = "move"
+        self.action_right: str | None = "move"
 
     def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
         """Return (width, height) this widget wants. Override in subclasses."""
@@ -45,10 +56,6 @@ class Widget:
     def on_enter(self):
         """Called when Enter is pressed on this focused widget."""
         pass
-
-    def handles_left_right(self) -> bool:
-        """Return True if this widget wants Left/Right input (when not active)."""
-        return False
 
     def on_left(self):
         """Called when Left is pressed on this focused widget."""

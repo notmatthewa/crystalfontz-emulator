@@ -290,7 +290,6 @@ class App:
         w = page.focused_widget
 
         if w and w.active:
-            # Active widget captures all input
             {
                 KEY_UP: w.on_up,
                 KEY_DOWN: w.on_down,
@@ -299,27 +298,26 @@ class App:
                 KEY_ENTER: w.on_enter,
                 KEY_EXIT: w.on_exit,
             }.get(key_code, lambda: None)()
+        elif key_code == KEY_ENTER:
+            if w:
+                w.on_enter()
+        elif key_code == KEY_EXIT:
+            if not self.go_back():
+                self.quit()
         else:
-            if key_code == KEY_UP:
-                page.focus_direction(0, -1)
-            elif key_code == KEY_DOWN:
-                page.focus_direction(0, 1)
-            elif key_code == KEY_LEFT:
-                if w and w.handles_left_right():
-                    w.on_left()
-                else:
-                    page.focus_direction(-1, 0)
-            elif key_code == KEY_RIGHT:
-                if w and w.handles_left_right():
-                    w.on_right()
-                else:
-                    page.focus_direction(1, 0)
-            elif key_code == KEY_ENTER:
-                if w:
-                    w.on_enter()
-            elif key_code == KEY_EXIT:
-                if not self.go_back():
-                    self.quit()
+            direction_map = {
+                KEY_UP: (w.action_up if w else "move", w.on_up if w else None, (0, -1)),
+                KEY_DOWN: (w.action_down if w else "move", w.on_down if w else None, (0, 1)),
+                KEY_LEFT: (w.action_left if w else "move", w.on_left if w else None, (-1, 0)),
+                KEY_RIGHT: (w.action_right if w else "move", w.on_right if w else None, (1, 0)),
+            }
+            entry = direction_map.get(key_code)
+            if entry:
+                action, handler, (dx, dy) = entry
+                if action == "move":
+                    page.focus_direction(dx, dy)
+                elif action == "select" and handler:
+                    handler()
 
         self._dirty = True
 

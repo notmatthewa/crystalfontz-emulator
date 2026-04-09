@@ -182,6 +182,8 @@ class Tabs(Widget):
         self.focusable = True
         self.tab_bar_height = CHAR_H + 2
         self.spacing = spacing
+        self.action_left = "select"
+        self.action_right = "select"
         if tabs:
             for name, content in tabs.items():
                 self.add_tab(name, content)
@@ -241,9 +243,6 @@ class Tabs(Widget):
     def focus_center(self) -> tuple[int, int]:
         """Report center as the tab bar header, not the full widget."""
         return (self.x + self.width // 2, self.y + self.tab_bar_height // 2)
-
-    def handles_left_right(self) -> bool:
-        return True
 
     def on_left(self):
         if self.active_index > 0:

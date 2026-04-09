@@ -22,7 +22,7 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/yourusername/cfui"
+Repository = "https://github.com/notmatthewa/crystalfontz-emulator"
 
 [tool.hatch.build.targets.sdist]
 include = ["__init__.py", "_crc.py", "_font.py", "core.py", "framebuffer.py", "layout.py", "widget.py", "widgets.py"]
