@@ -111,6 +111,7 @@ class App:
         self._dirty = True
         self._on_key: dict[int, Callable] = {}
         self.dark_mode = False
+        self._overlay: object | None = None
 
     def add_page(self, page: Page):
         self._pages[page.name] = page
@@ -149,6 +150,16 @@ class App:
 
     def invalidate(self):
         """Mark display as needing a redraw."""
+        self._dirty = True
+
+    def show_overlay(self, overlay):
+        """Show a full-screen overlay. Blocks page rendering and input."""
+        self._overlay = overlay
+        self._dirty = True
+
+    def hide_overlay(self):
+        """Remove the overlay and return to normal page rendering."""
+        self._overlay = None
         self._dirty = True
 
     def set_dark_mode(self, enabled: bool):
@@ -215,6 +226,11 @@ class App:
         self._running = False
 
     def _render(self):
+        if self._overlay:
+            self._overlay.layout(0, 0, LCD_WIDTH, LCD_HEIGHT)
+            self._overlay.draw(self.fb)
+            self._flush_framebuffer()
+            return
         page = self.current_page
         if not page:
             return
@@ -258,7 +274,9 @@ class App:
 
     def _handle_key(self, key_code: int):
         if key_code > KEY_EXIT:
-            return  # Ignore release events (7-12)
+            return
+        if self._overlay:
+            return
 
         if key_code in self._on_key:
             self._on_key[key_code]()

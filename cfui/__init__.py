@@ -6,13 +6,14 @@ Communicates over serial using the CFA835 packet protocol.
 """
 
 from .core import App, Page
-from .widgets import Text, Button, HRule, ProgressBar, Slider, Spacer, Icon
+from .widgets import Text, Button, HRule, ProgressBar, Slider, Spacer, Icon, Image, Overlay
 from .layout import Row, Column, Tabs
 from .storage import Storage
 
 __all__ = [
     "App", "Page",
     "Text", "Button", "HRule", "ProgressBar", "Slider", "Spacer", "Icon",
+    "Image", "Overlay",
     "Row", "Column", "Tabs",
     "Storage",
 ]

@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Callable
 
 from .widget import Widget
-from .framebuffer import FrameBuffer, CHAR_W, CHAR_H
+from .framebuffer import FrameBuffer, CHAR_W, CHAR_H, LCD_WIDTH, LCD_HEIGHT
 
 
 class Text(Widget):
@@ -289,3 +289,94 @@ class Icon(Widget):
             for rx, pixel in enumerate(row):
                 if pixel:
                     fb.set_pixel(self.x + rx, self.y + ry, self.shade)
+
+
+class Image(Widget):
+    """Grayscale image widget from raw pixel data.
+
+    Data is a flat bytes/bytearray of shade values (0-255),
+    row-major order, sized img_w * img_h.
+    """
+
+    def __init__(self, data: bytes | bytearray, img_w: int, img_h: int):
+        super().__init__()
+        self._data = data
+        self.img_w = img_w
+        self.img_h = img_h
+
+    @property
+    def data(self) -> bytes | bytearray:
+        return self._data
+
+    @data.setter
+    def data(self, value: bytes | bytearray):
+        self._data = value
+
+    def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
+        return (min(self.img_w, max_w), min(self.img_h, max_h))
+
+    def draw(self, fb: FrameBuffer):
+        if not self.visible:
+            return
+        for iy in range(min(self.img_h, self.height)):
+            for ix in range(min(self.img_w, self.width)):
+                shade = self._data[iy * self.img_w + ix]
+                if shade > 0:
+                    fb.set_pixel(self.x + ix, self.y + iy, shade)
+
+
+class Overlay(Widget):
+    """Full-screen overlay that draws above everything.
+
+    Used for loading screens, alerts, splash screens, etc.
+    While shown, the App skips page rendering and key handling entirely.
+
+    Usage:
+        loading = Overlay(text="Loading...")
+        app.show_overlay(loading)
+        # ... do work ...
+        app.hide_overlay()
+
+    Or with a custom body widget for full layout control:
+        overlay = Overlay(body=Column(children=[
+            Text("Please wait", align="center"),
+            ProgressBar(value=0.5),
+        ]))
+    """
+
+    def __init__(self, text: str = "", body: Widget | None = None,
+                 shade: int = 0xFF):
+        super().__init__()
+        self._text = text
+        self._body = body
+        self.shade = shade
+
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @text.setter
+    def text(self, value: str):
+        self._text = value
+
+    @property
+    def body(self) -> Widget | None:
+        return self._body
+
+    def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
+        return (LCD_WIDTH, LCD_HEIGHT)
+
+    def layout(self, x: int, y: int, w: int, h: int):
+        super().layout(0, 0, LCD_WIDTH, LCD_HEIGHT)
+        if self._body:
+            self._body.layout(0, 0, LCD_WIDTH, LCD_HEIGHT)
+
+    def draw(self, fb: FrameBuffer):
+        fb.clear()
+        if self._body:
+            self._body.draw(fb)
+        elif self._text:
+            tw = len(self._text) * CHAR_W
+            tx = (LCD_WIDTH - tw) // 2
+            ty = (LCD_HEIGHT - CHAR_H) // 2
+            fb.draw_text(tx, ty, self._text, self.shade)
