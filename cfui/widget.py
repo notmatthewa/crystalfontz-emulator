@@ -28,6 +28,10 @@ class Widget:
         self.width = w
         self.height = h
 
+    def focus_center(self) -> tuple[int, int]:
+        """Return (x, y) center point used for spatial focus navigation."""
+        return (self.x + self.width // 2, self.y + self.height // 2)
+
     def draw(self, fb: FrameBuffer):
         """Render this widget to the framebuffer. Override in subclasses."""
         pass

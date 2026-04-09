@@ -231,6 +231,10 @@ class Tabs(Widget):
         if content:
             content.draw(fb)
 
+    def focus_center(self) -> tuple[int, int]:
+        """Report center as the tab bar header, not the full widget."""
+        return (self.x + self.width // 2, self.y + self.tab_bar_height // 2)
+
     def on_left(self):
         if self.active_index > 0:
             self.active_index -= 1

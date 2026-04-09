@@ -40,8 +40,7 @@ class Page:
         if not self._focusable or len(self._focusable) < 2:
             return
         current = self._focusable[self._focus_index]
-        cx = current.x + current.width // 2
-        cy = current.y + current.height // 2
+        cx, cy = current.focus_center()
 
         best = None
         best_score = float("inf")
@@ -49,8 +48,7 @@ class Page:
         for i, w in enumerate(self._focusable):
             if i == self._focus_index:
                 continue
-            wx = w.x + w.width // 2
-            wy = w.y + w.height // 2
+            wx, wy = w.focus_center()
             rx = wx - cx
             ry = wy - cy
 
