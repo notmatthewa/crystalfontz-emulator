@@ -21,19 +21,21 @@ BUTTON_W = 36
 BUTTON_H = 36
 
 BG_COLOR = (40, 40, 45)
-LCD_BG = (180, 200, 160)
-LCD_FG = (30, 40, 20)
+LCD_BG_OFF = (170, 190, 150)    # Backlight off: yellow-green
+LCD_BG_ON = (190, 215, 225)     # Backlight full: light blue
+LCD_FG_OFF = (30, 40, 20)       # Pixel on, backlight off: dark green
+LCD_FG_ON = (20, 30, 40)        # Pixel on, backlight full: dark blue-grey
 BEZEL_COLOR = (60, 60, 65)
 BUTTON_COLOR = (80, 80, 85)
 BUTTON_HOVER = (100, 100, 105)
 BUTTON_TEXT_COLOR = (200, 200, 200)
 
 BUTTONS = [
-    {"label": "\u25b2", "press": KEY_UP_PRESS, "release": KEY_UP_RELEASE},
-    {"label": "\u25bc", "press": KEY_DOWN_PRESS, "release": KEY_DOWN_RELEASE},
-    {"label": "\u25c0", "press": KEY_LEFT_PRESS, "release": KEY_LEFT_RELEASE},
-    {"label": "\u25b6", "press": KEY_RIGHT_PRESS, "release": KEY_RIGHT_RELEASE},
-    {"label": "\u2713", "press": KEY_ENTER_PRESS, "release": KEY_ENTER_RELEASE},
+    {"label": "^", "press": KEY_UP_PRESS, "release": KEY_UP_RELEASE},
+    {"label": "v", "press": KEY_DOWN_PRESS, "release": KEY_DOWN_RELEASE},
+    {"label": "<", "press": KEY_LEFT_PRESS, "release": KEY_LEFT_RELEASE},
+    {"label": ">", "press": KEY_RIGHT_PRESS, "release": KEY_RIGHT_RELEASE},
+    {"label": "OK", "press": KEY_ENTER_PRESS, "release": KEY_ENTER_RELEASE},
     {"label": "X", "press": KEY_EXIT_PRESS, "release": KEY_EXIT_RELEASE},
 ]
 
@@ -136,20 +138,20 @@ class GUI:
         pygame.display.flip()
 
     def _draw_lcd(self):
-        brightness = self.device.display_brightness / 100.0
+        b = self.device.display_brightness / 100.0
+
+        # Interpolate LCD colors between backlight-off (green) and full (blue)
+        lcd_bg = tuple(int(LCD_BG_OFF[i] * (1 - b) + LCD_BG_ON[i] * b) for i in range(3))
+        lcd_fg = tuple(int(LCD_FG_OFF[i] * (1 - b) + LCD_FG_ON[i] * b) for i in range(3))
+
+        # Blend with chassis BG when backlight is dim
+        bg_r = tuple(int(lcd_bg[i] * max(b, 0.15) + BG_COLOR[i] * (1 - max(b, 0.15))) for i in range(3))
+        fg_r = tuple(int(lcd_fg[i] * max(b, 0.15) + BG_COLOR[i] * (1 - max(b, 0.15))) for i in range(3))
+
         for y in range(LCD_HEIGHT):
             for x in range(LCD_WIDTH):
                 shade = self.device.framebuffer[y * LCD_WIDTH + x]
-                pixel_on = shade > 127
-                if pixel_on:
-                    r = int(LCD_FG[0] * brightness + BG_COLOR[0] * (1 - brightness))
-                    g = int(LCD_FG[1] * brightness + BG_COLOR[1] * (1 - brightness))
-                    b = int(LCD_FG[2] * brightness + BG_COLOR[2] * (1 - brightness))
-                else:
-                    r = int(LCD_BG[0] * brightness + BG_COLOR[0] * (1 - brightness))
-                    g = int(LCD_BG[1] * brightness + BG_COLOR[1] * (1 - brightness))
-                    b = int(LCD_BG[2] * brightness + BG_COLOR[2] * (1 - brightness))
-                self.lcd_surface.set_at((x, y), (r, g, b))
+                self.lcd_surface.set_at((x, y), fg_r if shade > 127 else bg_r)
 
         bezel_rect = pygame.Rect(
             self.lcd_x - 4, self.lcd_y - 4,
@@ -174,7 +176,7 @@ class GUI:
         for i, rect in enumerate(self.button_rects):
             hovering = rect.collidepoint(mouse_pos)
             color = BUTTON_HOVER if hovering else BUTTON_COLOR
-            if BUTTONS[i]["label"] == "\u2713":
+            if BUTTONS[i]["label"] == "OK":
                 color = (40, 100, 40) if not hovering else (50, 130, 50)
             elif BUTTONS[i]["label"] == "X":
                 color = (130, 40, 40) if not hovering else (160, 50, 50)

@@ -4,4 +4,5 @@ __pycache__/
 *.pyc
 dist/
 *.egg-info/
+.cfa835_flash
 ./cfui/logo.png

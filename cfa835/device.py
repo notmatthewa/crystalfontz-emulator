@@ -1,7 +1,11 @@
+import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import ClassVar
 
 from .protocol import Packet, make_response, make_error, make_report
+
+FLASH_FILE = Path(__file__).parent.parent / ".cfa835_flash"
 
 LCD_WIDTH = 244
 LCD_HEIGHT = 68
@@ -56,6 +60,17 @@ class CFA835Device:
     inverted: bool = False
     _pending_image: dict | None = field(default=None, repr=False)
     _image_buf: bytearray = field(default_factory=bytearray, repr=False)
+
+    def __post_init__(self):
+        self._load_flash()
+
+    def _load_flash(self):
+        if FLASH_FILE.exists():
+            data = FLASH_FILE.read_bytes()
+            self.user_flash[:len(data)] = data[:124]
+
+    def _save_flash(self):
+        FLASH_FILE.write_bytes(bytes(self.user_flash))
 
     @property
     def waiting_for_image_data(self) -> bool:
@@ -124,6 +139,7 @@ class CFA835Device:
         if length < 1 or length > 124:
             return make_error(2, INTERFACE_USB, ERR_INVALID_LENGTH)
         self.user_flash[:length] = packet.data
+        self._save_flash()
         return make_response(2)
 
     def _cmd_read_flash(self, packet: Packet) -> Packet:
