@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(py|toml|md\\)$\")",
+      "Bash(python3:*)",
+      "Bash(npm list:*)",
+      "Bash(find /Users/matt/Documents/Dev/crystalfontz-emulator/.claude -type f -name *.json -o -name *.yml -o -name *.yaml)",
+      "Bash(xargs ls:*)",
+      "Bash(find /Users/matt/.claude -type f \\\\\\(-name *.json -o -name *.yml -o -name *.yaml \\\\\\))",
+      "Bash(uvx --version)",
+      "Bash(uvx --from \"git+https://github.com/oraios/serena\" serena start-mcp-server --help)",
+      "mcp__serena__list_dir",
+      "mcp__serena__activate_project",
+      "mcp__serena__initial_instructions",
+      "mcp__serena__jet_brains_get_symbols_overview",
+      "Bash(grep:*)",
+      "Bash(uv build:*)",
+      "Read(//private/tmp/**)",
+      "Bash(uv run:*)",
+      "Bash(mkdir -p /tmp/cfui-build)",
+      "Bash(ln -sf /Users/matt/Documents/Dev/crystalfontz-emulator/cfui /tmp/cfui-build/cfui)",
+      "Bash(git:*)",
+      "Bash(gh auth:*)",
+      "Bash(ssh -T git@github.com)"
+    ]
+  }
+}
