@@ -203,7 +203,11 @@ class Tabs(Widget):
         return None
 
     def measure(self, max_w: int, max_h: int) -> tuple[int, int]:
-        return (max_w, max_h)
+        content_h = 0
+        for _, content in self._tabs:
+            _, ch = content.measure(max_w, max_h - self.tab_bar_height - self.spacing)
+            content_h = max(content_h, ch)
+        return (max_w, self.tab_bar_height + self.spacing + content_h)
 
     def layout(self, x: int, y: int, w: int, h: int):
         super().layout(x, y, w, h)
