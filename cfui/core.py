@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import tty
 import time
 from typing import Callable
 
@@ -103,6 +104,7 @@ class App:
 
     def __init__(self, pty_path: str, exit_quits: bool = False):
         self.fd = os.open(pty_path, os.O_RDWR | os.O_NOCTTY)
+        tty.setraw(self.fd)
         os.set_blocking(self.fd, False)
         self.fb = FrameBuffer()
         self._last_frame: bytes = b""
