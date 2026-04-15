@@ -3,4 +3,7 @@ name = "crystalfontzemulator"
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.12"
-dependencies = ["pygame>=2.5"]
+dependencies = [
+    "pygame>=2.5",
+    "cfui @ git+https://github.com/notmatthewa/cfui.git",
+]

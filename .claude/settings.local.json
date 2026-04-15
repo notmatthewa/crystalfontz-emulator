@@ -21,7 +21,15 @@
       "Bash(ln -sf /Users/matt/Documents/Dev/crystalfontz-emulator/cfui /tmp/cfui-build/cfui)",
       "Bash(git:*)",
       "Bash(gh auth:*)",
-      "Bash(ssh -T git@github.com)"
+      "Bash(ssh -T git@github.com)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(uv pip:*)",
+      "Bash(pipx install:*)",
+      "Bash(brew install:*)",
+      "Bash(pip3 show:*)",
+      "Bash(gh repo:*)"
     ]
   }
 }

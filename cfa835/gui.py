@@ -148,10 +148,16 @@ class GUI:
         bg_r = tuple(int(lcd_bg[i] * max(b, 0.15) + BG_COLOR[i] * (1 - max(b, 0.15))) for i in range(3))
         fg_r = tuple(int(lcd_fg[i] * max(b, 0.15) + BG_COLOR[i] * (1 - max(b, 0.15))) for i in range(3))
 
+        # Build a 256-entry color lookup table for shade interpolation
+        lut = []
+        for s in range(256):
+            t = s / 255.0
+            lut.append(tuple(int(bg_r[i] + (fg_r[i] - bg_r[i]) * t) for i in range(3)))
+
         for y in range(LCD_HEIGHT):
+            row = y * LCD_WIDTH
             for x in range(LCD_WIDTH):
-                shade = self.device.framebuffer[y * LCD_WIDTH + x]
-                self.lcd_surface.set_at((x, y), fg_r if shade > 127 else bg_r)
+                self.lcd_surface.set_at((x, y), lut[self.device.framebuffer[row + x]])
 
         bezel_rect = pygame.Rect(
             self.lcd_x - 4, self.lcd_y - 4,
